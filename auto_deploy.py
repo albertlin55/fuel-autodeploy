@@ -10,149 +10,268 @@ from logging.handlers import RotatingFileHandler
 import pdb
 
 
-def command_init():
-    parser = argparse.ArgumentParser(description='Process some integers.')
+class deployment:
 
-    parser.add_argument("--deployment", action="store_true", help='Deploy New Openstack environment.', default='True')
+    def __init__(self, pipe_open, info_loger, info_json):
 
-    parser.add_argument("--dir", help='select directory to which store fuel configure files.', default='./')
+        self.pipeopen = pipe_open
 
-    args = parser.parse_args()
+        self.infologer = info_loger
 
-    return args
+        self.infojson = info_json
 
-def logging_init():
+        self.logging_init()
 
-    Rthandler = RotatingFileHandler('myapp.log', maxBytes=10 * 1024 * 1024, backupCount=10)
-    Rthandler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s %(levelname)-8s: %(message)s')
-    Rthandler.setFormatter(formatter)
-    logging.getLogger('').addHandler(Rthandler)
+    def command_init(self):
 
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s %(levelname)-8s: %(message)s')
-    console.setFormatter(formatter)
-    logging.getLogger('').addHandler(console)
+        parser = argparse.ArgumentParser(description='Process some integers.')
 
+        parser.add_argument(
+            "--deployment",
+            action="store_true",
+            help='Deploy New Openstack environment.',
+            default='True')
 
-def get_cluster_info(path, pipeopen, infologer):
+        parser.add_argument(
+            "--dir",
+            help='select directory to which store fuel configure files.',
+            default='./')
 
-    proc = pipeopen.Popen(['timeout', '2', 'fuel2', 'node', 'list', '-f', 'json'], stdout=pipeopen.PIPE)
-    proc.wait()
+        self.args = parser.parse_args()
 
-    if proc.returncode != 0:
-        infologer.error('command fuel2 not found or caused error')
-        sys.exit(proc.returncode)
+        self.path = self.args.dir
 
-    nodeinfo = proc.communicate()
+        return self.args
 
-    nodeinfo_json = json.loads(nodeinfo[0])
+    def logging_init(self):
 
-    node_num = len(nodeinfo_json)
+        Rthandler = RotatingFileHandler(
+            'myapp.log', maxBytes=10 * 1024 * 1024, backupCount=10)
+        Rthandler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter(
+            '%(asctime)s %(levelname)-8s: %(message)s')
+        Rthandler.setFormatter(formatter)
+        logging.getLogger('').addHandler(Rthandler)
 
-    id_list = []  # store node id
+        console = logging.StreamHandler()
+        console.setLevel(logging.INFO)
+        formatter = logging.Formatter(
+            '%(asctime)s %(levelname)-8s: %(message)s')
+        console.setFormatter(formatter)
+        logging.getLogger('').addHandler(console)
 
-    for num in range(node_num):
-        if nodeinfo_json[num]['status'] != 'ready':
-            infologer.error('The original environment is not ready')
-            sys.exit(1)
+    def get_node_info(self):
 
-        id_list.append(str(nodeinfo_json[num]['id']))
-
-    cluster = nodeinfo_json[0]['cluster']
-
-    proc = pipeopen.Popen(['timeout', '2', 'fuel', '--env', str(cluster), 'network', 'download', '--dir', path], stdout=pipeopen.PIPE)
-    proc.wait()
-
-    if proc.returncode != 0:
-        infologer.error('command fuel not found or caused error')
-        sys.exit(proc.returncode)
-
-    proc = pipeopen.Popen(['timeout', '2', 'fuel', '--env', str(cluster), 'settings', 'download', '--dir', path],
-                            stdout=pipeopen.PIPE)
-    proc.wait()
-
-    if proc.returncode != 0:
-        infologer.error('command fuel not found or caused error')
-        sys.exit(proc.returncode)
-
-    proc = pipeopen.Popen(['timeout', '2', 'fuel', '--env', str(cluster), 'deployment', 'default', '--dir', path],
-                            stdout=pipeopen.PIPE)
-    proc.wait()
-
-    if proc.returncode != 0:
-        infologer.error('command fuel not found or caused error')
-        sys.exit(proc.returncode)
-
-    proc = pipeopen.Popen(['timeout', '2', 'fuel', '--env', str(cluster), 'network', 'download', '--dir', path],
-                            stdout=pipeopen.PIPE)
-    proc.wait()
-
-    if proc.returncode != 0:
-        infologer.error('command fuel not found or caused error')
-        sys.exit(proc.returncode)
-
-    for id_list_idx in range(node_num):
-
-        proc = pipeopen.Popen(['timeout', '2', 'fuel', 'node', '--node-id', id_list[id_list_idx], '--network', '--download', '--dir', path],
-                                stdout=pipeopen.PIPE)
+        proc = self.pipeopen.Popen(['timeout',
+                                    '2',
+                                    'fuel2',
+                                    'node',
+                                    'list',
+                                    '-f',
+                                    'json'],
+                                   stdout=self.pipeopen.PIPE)
         proc.wait()
 
         if proc.returncode != 0:
-            infologer.error('command fuel not found or caused error')
+            self.infologer.error('command fuel2 not found or caused error')
             sys.exit(proc.returncode)
 
-        proc = pipeopen.Popen(
-            ['timeout', '2', 'fuel', 'node', '--node-id', id_list[id_list_idx], '--attributes', '--download', '--dir', path],
-            stdout=pipeopen.PIPE)
+        nodeinfo = proc.communicate()
+
+        self.nodeinfo_json = self.infojson.loads(nodeinfo[0])
+
+        return self.nodeinfo_json
+
+    def get_cluster_info(self):
+
+        proc = self.pipeopen.Popen(
+            ['timeout', '2', 'fuel2', 'node', 'list', '-f', 'json'], stdout=self.pipeopen.PIPE)
         proc.wait()
 
         if proc.returncode != 0:
-            infologer.error('command fuel not found or caused error')
+            self.infologer.error('command fuel2 not found or caused error')
             sys.exit(proc.returncode)
 
-        proc = pipeopen.Popen(
-            ['timeout', '2', 'fuel', 'node', '--node-id', id_list[id_list_idx], '--disk', '--download', '--dir', path],
-            stdout=pipeopen.PIPE)
+        nodeinfo = proc.communicate()
+
+        self.nodeinfo_json = json.loads(nodeinfo[0])
+
+    def get_node_num(self):
+
+        self.node_num = len(self.nodeinfo_json)
+
+    def store_node_id(self):
+
+        self.id_list = []  # store node id
+
+        for num in range(self.node_num):
+            if self.nodeinfo_json[num]['status'] != 'ready':
+                self.infologer.error('The original environment is not ready')
+                sys.exit(1)
+
+            self.id_list.append(str(self.nodeinfo_json[num]['id']))
+
+    def get_env_num(self):
+
+        self.cluster = self.nodeinfo_json[0]['cluster']
+
+    def get_env_net_cfg_to_file(self):
+
+        proc = self.pipeopen.Popen(['timeout',
+                                    '2',
+                                    'fuel',
+                                    '--env',
+                                    str(self.cluster),
+                                    'network',
+                                    'download',
+                                    '--dir',
+                                    self.path],
+                                   stdout=self.pipeopen.PIPE)
         proc.wait()
 
         if proc.returncode != 0:
-            infologer.error('command fuel not found or caused error')
+            self.infologer.error('command fuel not found or caused error')
             sys.exit(proc.returncode)
 
+    def get_env_setting_cfg_to_file(self):
 
-    return nodeinfo_json
+        proc = self.pipeopen.Popen(['timeout',
+                                    '2',
+                                    'fuel',
+                                    '--env',
+                                    str(self.cluster),
+                                    'settings',
+                                    'download',
+                                    '--dir',
+                                    self.path],
+                                   stdout=self.pipeopen.PIPE)
+        proc.wait()
 
-def deploy_main(cluster_info_json):
-    pass
+        if proc.returncode != 0:
+            self.infologer.error('command fuel not found or caused error')
+            sys.exit(proc.returncode)
+
+    def get_env_deploy_cfg_to_file(self):
+
+        proc = self.pipeopen.Popen(['timeout',
+                                    '2',
+                                    'fuel',
+                                    '--env',
+                                    str(self.cluster),
+                                    'deployment',
+                                    'default',
+                                    '--dir',
+                                    self.path],
+                                   stdout=self.pipeopen.PIPE)
+        proc.wait()
+
+        if proc.returncode != 0:
+            self.infologer.error('command fuel not found or caused error')
+            sys.exit(proc.returncode)
+
+    # def get_env_setting_cfg_to_file(self):
+    # proc = pipeopen.Popen(['timeout',
+    #                        '2',
+    #                        'fuel',
+    #                        '--env',
+    #                        str(cluster),
+    #                        'network',
+    #                        'download',
+    #                        '--dir',
+    #                        path],
+    #                       stdout=pipeopen.PIPE)
+    # proc.wait()
+    #
+    # if proc.returncode != 0:
+    #     infologer.error('command fuel not found or caused error')
+    #     sys.exit(proc.returncode)
+
+    def get_node_cfg_to_file(self):
+
+        id_list_idx = 0
+        while id_list_idx < self.node_num:
+            self.get_node_net_cfg_to_file(id_list_idx)
+            self.get_node_attr_cfg_to_file(id_list_idx)
+            self.get_node_disk_cfg_to_file(id_list_idx)
+            id_list_idx += 1
+
+        return id_list_idx
+
+    def get_node_net_cfg_to_file(self, id_list_idx):
+
+        proc = self.pipeopen.Popen(['tim'
+                                    'eout',
+                                    '2',
+                                    'fuel',
+                                    'node',
+                                    '--node-id',
+                                    self.id_list[id_list_idx],
+                                    '--network',
+                                    '--download',
+                                    '--dir',
+                                    self.path],
+                                   stdout=self.pipeopen.PIPE)
+        proc.wait()
+
+        if proc.returncode != 0:
+            self.infologer.error('command fuel not found or caused error')
+            sys.exit(proc.returncode)
+
+    def get_node_attr_cfg_to_file(self, id_list_idx):
+
+        proc = self.pipeopen.Popen(['timeout',
+                                    '2',
+                                    'fuel',
+                                    'node',
+                                    '--node-id',
+                                    self.id_list[id_list_idx],
+                                    '--attributes',
+                                    '--download',
+                                    '--dir',
+                                    self.path],
+                                   stdout=self.pipeopen.PIPE)
+        proc.wait()
+
+        if proc.returncode != 0:
+            self.infologer.error('command fuel not found or caused error')
+            sys.exit(proc.returncode)
+
+    def get_node_disk_cfg_to_file(self, id_list_idx):
+
+        proc = self.pipeopen.Popen(['timeout',
+                                    '2',
+                                    'fuel',
+                                    'node',
+                                    '--node-id',
+                                    self.id_list[id_list_idx],
+                                    '--disk',
+                                    '--download',
+                                    '--dir',
+                                    self.path],
+                                   stdout=self.pipeopen.PIPE)
+        proc.wait()
+
+        if proc.returncode != 0:
+            self.infologer.error('command fuel not found or caused error')
+            sys.exit(proc.returncode)
+
+##############################auto_deploy main#############################
 
 
-def load_env_cfg_main():
-    pass
+def deploy_main():
 
-#################################################auto_deploy main#######################################################
+    deploy = deployment(subprocess, logging, json)
 
-args = command_init()
+    args = deploy.command_init()
 
-infologer = logging_init()
+    if not os.path.isdir(args.dir):
+        print "The path don't exist."
+        sys.exit(1)
 
-if not os.path.isdir(args.dir):
-    print "The path don't exist."
-    sys.exit(1)
+    if args.deployment:
 
+        deploy.get_cluster_info()
 
-if args.deployment:
+        print args.deployment
 
-    cluster_info_json = get_cluster_info(args.dir, subprocess, logging)
-
-    deploy_main(cluster_info_json)
-
-    print args.deployment
-
-print args.dir
-
-
-
-
-
+    print args.dir
