@@ -235,12 +235,4 @@ class TestAutoDeploy():
         with pytest.raises(SystemExit):
             testdeploy.get_node_disk_cfg_to_file(0)
 
-# testobj = TestAutoDeploy()
-#
-# testobj.mock_logging()
-# testobj.mock_json()
 
-#test_get_node_info_expect()
-
-
-#        assert testdeploy.get_node_info() == 1

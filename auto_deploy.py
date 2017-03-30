@@ -169,23 +169,6 @@ class deployment:
             self.infologer.error('command fuel not found or caused error')
             sys.exit(proc.returncode)
 
-    # def get_env_setting_cfg_to_file(self):
-    # proc = pipeopen.Popen(['timeout',
-    #                        '2',
-    #                        'fuel',
-    #                        '--env',
-    #                        str(cluster),
-    #                        'network',
-    #                        'download',
-    #                        '--dir',
-    #                        path],
-    #                       stdout=pipeopen.PIPE)
-    # proc.wait()
-    #
-    # if proc.returncode != 0:
-    #     infologer.error('command fuel not found or caused error')
-    #     sys.exit(proc.returncode)
-
     def get_node_cfg_to_file(self):
 
         id_list_idx = 0
